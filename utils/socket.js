@@ -1,8 +1,8 @@
 import { server } from "../server";
-import socketIO from "socket.io";
+import { Server } from "socket.io";
 import os from "os-utils";
 
-const io = socketIO(server);
+const io = new Server(server);
 
 io.on("connection", (socket) => {
   console.log("New client connected");
@@ -20,7 +20,7 @@ io.on("connection", (socket) => {
         freeMemory: freeMemory / 1024,
         totalMemory: totalMemory / 1024,
         uptime: uptime,
-        responseTime: Math.random() * 100, // Simulated response time
+        responseTime: Math.random() * 100,
       };
 
       io.emit("serverStats", data);
