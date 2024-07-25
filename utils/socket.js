@@ -7,7 +7,7 @@ const io = socketIO(server);
 io.on("connection", (socket) => {
   console.log("New client connected");
 
-  setInterval(() => {
+  const sendStats = () => {
     const memoryUsage = process.memoryUsage();
     os.cpuUsage((cpuPercentage) => {
       const freeMemory = os.freemem();
@@ -20,14 +20,17 @@ io.on("connection", (socket) => {
         freeMemory: freeMemory / 1024,
         totalMemory: totalMemory / 1024,
         uptime: uptime,
-        responseTime: Math.random() * 100,
+        responseTime: Math.random() * 100, // Simulated response time
       };
 
       io.emit("serverStats", data);
     });
-  }, 1000);
+  };
+
+  const intervalId = setInterval(sendStats, 1000);
 
   socket.on("disconnect", () => {
     console.log("Client disconnected");
+    clearInterval(intervalId);
   });
 });
