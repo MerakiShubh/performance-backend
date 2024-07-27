@@ -57,7 +57,7 @@ io.on("connection", (socket) => {
         responseTime: Math.random() * 100,
       };
 
-      console.log("Emitting data:", data); // Add this line for debugging
+      // console.log("Emitting data:", data); // Add this line for debugging
 
       io.emit("serverStats", data);
     });
