@@ -50,9 +50,9 @@ io.on("connection", (socket) => {
 
       const data = {
         cpuPercentage: cpuPercentage * 100,
-        memoryUsage: memoryUsage.rss / 1024 / 1024,
-        freeMemory: freeMemory / 1024,
-        totalMemory: totalMemory / 1024,
+        memoryUsage: memoryUsage.rss / 1024 / 1024, // Convert to MB
+        freeMemory: freeMemory * 1024, // Convert to MB
+        totalMemory: totalMemory * 1024, // Convert to MB
         uptime: uptime,
         responseTime: Math.random() * 100,
       };
