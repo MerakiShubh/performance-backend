@@ -2,7 +2,8 @@ import express from "express";
 import pm2 from "pm2";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import os from "os-utils";
+import osUtils from "os-utils";
+import os from "os";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
@@ -38,28 +39,81 @@ pm2.connect((err) => {
   }
 });
 
+const getTotalCpuPercentage = (callback) => {
+  const cpusStart = os.cpus();
+
+  setTimeout(() => {
+    const cpusEnd = os.cpus();
+    let totalIdle = 0;
+    let totalTick = 0;
+
+    cpusStart.forEach((start, i) => {
+      const end = cpusEnd[i].times;
+
+      const idle = end.idle - start.times.idle;
+      const total =
+        end.user +
+        end.nice +
+        end.sys +
+        end.irq +
+        end.idle -
+        (start.times.user +
+          start.times.nice +
+          start.times.sys +
+          start.times.irq +
+          start.times.idle);
+
+      totalIdle += idle;
+      totalTick += total;
+    });
+
+    const totalActive = totalTick - totalIdle;
+    const totalCpuPercentage = (totalActive / totalTick) * 100;
+
+    const cpuInfo = {
+      totalTick: totalTick,
+      totalIdle: totalIdle,
+      totalActive: totalActive,
+      totalCpuPercentage: totalCpuPercentage,
+    };
+
+    // console.log(cpuInfo);
+
+    callback(totalCpuPercentage, cpuInfo);
+  }, 100);
+};
+
 io.on("connection", (socket) => {
   console.log("New client connected");
 
   const sendStats = () => {
     const memoryUsage = process.memoryUsage();
-    os.cpuUsage((cpuPercentage) => {
-      const freeMemory = os.freemem();
-      const totalMemory = os.totalmem();
-      const uptime = os.processUptime();
 
-      const data = {
-        cpuPercentage: cpuPercentage * 100,
-        memoryUsage: memoryUsage.rss / 1024 / 1024, // Convert to MB
-        freeMemory: freeMemory * 1024, // Convert to MB
-        totalMemory: totalMemory * 1024, // Convert to MB
-        uptime: uptime,
-        responseTime: Math.random() * 100,
-      };
+    getTotalCpuPercentage((totalCpuPercentage, cpuInfo) => {
+      osUtils.cpuUsage((cpuPercentage) => {
+        const freeMemory = osUtils.freemem();
+        const totalMemory = osUtils.totalmem();
+        const uptime = osUtils.processUptime();
 
-      // console.log("Emitting data:", data); // Add this line for debugging
+        const data = {
+          currentCpuPercentage: cpuPercentage * 100,
+          totalCpuPercentage: totalCpuPercentage,
+          memoryUsage: memoryUsage.rss / 1024 / 1024,
+          freeMemory: freeMemory * 1024,
+          totalMemory: totalMemory * 1024,
+          uptime: uptime,
+          responseTime: Math.random() * 100,
+          totalCPUs: os.cpus().length,
+          cpuModel: os.cpus()[0].model,
+          cpuSpeed: os.cpus()[0].speed,
+          cpuTimes: os.cpus().map((cpu) => cpu.times),
+          cpuInfo: cpuInfo,
+        };
 
-      io.emit("serverStats", data);
+        // console.log("Emitting data:", data);
+
+        io.emit("serverStats", data);
+      });
     });
   };
 
